@@ -111,11 +111,11 @@ def repo_create(path: str):
     assert repo_dir(repo, "refs", "tags", mkdir=True)
     assert repo_dir(repo, "refs", "heads", mkdir=True)
 
-    # .git/description
-    with open(repo_file(repo, "HEAD"), "w") as f:
-        f.write("ref: refs/heads/maser\n")
-
     # .git/HEAD
+    with open(repo_file(repo, "HEAD"), "w") as f:
+        f.write("ref: refs/heads/master\n")
+
+    # .git/config
     with open(repo_file(repo, "config"), "w") as f:
         config = repo_default_config()
         config.write(f)
@@ -142,3 +142,24 @@ argsp.add_argument("path",
 
 def cmd_init(args):
     repo_create(args.path)
+
+def repo_find(path=".", required=True):
+    path = os.path.realpath(path)
+
+    if os.path.isdir(os.path.join(path, ".git")):
+        return GitRepository(path)
+
+    # If we haven't returned, recurse in parent, if w
+    parent = os.path.realpath(os.path.join(path, ".."))
+
+    if parent == path:
+        # Bottom case
+        # os.path.join("/", "..") == "/":
+        # If parent==path, then path is root.
+        if required:
+            raise Exception("No git directory.")
+        else:
+            return None
+
+    return repo_find(parent, required)
+
